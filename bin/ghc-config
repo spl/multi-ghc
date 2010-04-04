@@ -1,0 +1,287 @@
+#!/bin/bash
+# ghc-config: configure symbolic links for multiple GHC distributions
+# AUTHOR: Sean Leather
+# LICENSE: public domain
+
+################################################################################
+#
+# This script allows a user to configure symbolic links to control which of
+# multiple possible GHC distributions should be used at any point in time.
+#
+# To use this script, do the following:
+#
+#   1. Install one or more GHC binary or source distributions at the location
+#      specified by $GHC_CONFIG_DIR. Name the directories with only the version
+#      number (e.g. `6.12.2' for that version of GHC). The directory
+#      `$GHC_CONFIG_DIR/<version>/bin' should have executables.
+#
+#   2. Add the following to your environment's $PATH:
+#
+#        $GHC_CONFIG_DIR/ghc/bin   executable directory for GHC
+#        $CABAL_USER_DIR/bin       executable directory for cabal-install
+#
+#      You can use the default values of the variables below, or you may wish to
+#      set them in your environment, and they will be inherited by this script.
+#
+#      As an example, my .bashrc looks similar to the following:
+#
+#        PATH=$PATH:/opt/ghc/bin:$HOME/.ghc-config/ghc/bin
+#        ghc-config -i
+#
+#   3. Add this script (e.g. `ghc-config') to your path (for convenience).
+#
+#   4. Run `ghc-config -i' to initialize the environment.
+#
+#   5. Install the `cabal-install' package from
+#      `http://hackage.haskell.org/package/cabal-install' using the included
+#      `bootstrap.sh'.
+#
+
+################################################################################
+#
+# Establish the following variables with default values if not already set in
+# the environment.
+#
+
+# The location of the user's configuration files for GHC and Cabal
+[ -n "$GHC_CONFIG_DIR" ] || GHC_CONFIG_DIR="$HOME/.ghc-config"
+
+# The location of the various GHC executable distributions
+[ -n "$GHC_DISTRIBUTION_DIR" ] || GHC_DISTRIBUTION_DIR="/opt/ghc"
+
+# The location of the cabal-install directory (i.e. the destination of the
+# symbolic link)
+[ -n "$CABAL_USER_DIR" ] || CABAL_USER_DIR="$HOME/.cabal"
+
+################################################################################
+#
+# Declare the executables used in this script. Hopefully, these will not need to
+# be changed, but just in case.
+#
+
+LS="/bin/ls"
+GREP="/bin/grep"
+LN="/bin/ln"
+RM="/bin/rm"
+GHC="ghc"
+
+################################################################################
+#
+# Executable used to call this script
+#
+
+PROG=$(basename $0)
+
+################################################################################
+#
+# Validate the environment variables
+#
+
+function create_dir()
+{
+  if [ ! -d "$1" ] && ! mkdir $1
+  then
+    echo "$PROG: The directory \`$1' cannot be created."
+    return -1
+  fi
+  return 0
+}
+
+if ! create_dir "$GHC_CONFIG_DIR"
+then
+  echo "$PROG: Create the directory or set \$GHC_CONFIG_DIR."
+  exit -1
+fi
+
+GHC_USER_DIR="$GHC_CONFIG_DIR/ghc"
+
+if [ -e "$CABAL_USER_DIR" -a ! -h "$CABAL_USER_DIR" ]
+then
+  echo "$PROG: The cabal path \`$CABAL_USER_DIR' exists and is not a symbolic link."
+  echo "$PROG: Remove the directory or set the \$CABAL_USER_DIR environment variable."
+  exit -1
+fi
+
+################################################################################
+#
+# Collect the GHC versions from the distribution directory
+#
+
+# The GHC version subdirectories determine which versions are available. The
+# `-v' sorts by version order in GNU ls, and it doesn't hurt in Mac OS X.
+GHC_VERSIONS=""
+for v in $($LS -v $GHC_DISTRIBUTION_DIR | $GREP '[0-9]\+.[0-9]\+.[0-9]\+')
+do
+  [ -x $GHC_DISTRIBUTION_DIR/$v/bin/$GHC ] && GHC_VERSIONS+="$v "
+done
+
+if [ -z "$GHC_VERSIONS" ]
+then
+  echo "$PROG: No GHC versions available in \`$GHC_DISTRIBUTION_DIR'."
+  echo "$PROG: You can set the \$GHC_DISTRIBUTION_DIR in the environment if you don't want the default value."
+  exit -1
+fi
+
+################################################################################
+#
+# Determine the current GHC version
+#
+
+CURRENT_GHC_VERSION_FILE="$GHC_CONFIG_DIR/current"
+
+if [ -e "$CURRENT_GHC_VERSION_FILE" ]
+then
+  CURRENT_GHC_VERSION=$(cat $CURRENT_GHC_VERSION_FILE)
+else
+  # Set to first from $GHC_VERSIONS
+  for v in $GHC_VERSIONS
+  do
+    CURRENT_GHC_VERSION="$v"
+    break
+  done
+fi
+
+################################################################################
+#
+# Functions
+#
+
+# Print usage text
+function usage()
+{
+  echo "Usage:"
+  echo "    $PROG              Show this usage information"
+  echo "    $PROG <version>    Set symbolic links to <version> (see available below)"
+  echo "    $PROG -i|--init    Set symbolic links to current version"
+  echo "    $PROG -c|--clean   Remove all symbolic links"
+
+  echo ""
+
+  echo "Available Versions:"
+  for v in $GHC_VERSIONS; do echo "    $v"; done
+
+  echo ""
+
+  echo "Current Version:"
+  printf "    %-16s %s\n" "$CURRENT_GHC_VERSION" "according to \`$CURRENT_GHC_VERSION_FILE'"
+  local ghc_path=$(which $GHC)
+  if [ -x "$ghc_path" ]
+  then
+    local ghc_version=$($GHC --numeric-version)
+    printf "    %-16s %s\n" "$ghc_version" "according to \`$ghc_path' in your path"
+  else
+    echo ""
+    echo "WARNING: There is no GHC executable in your path."
+  fi
+}
+
+# Remove a symbolic link
+function rm_link()
+{
+  if [ -e "$1" -a ! -h "$1" ]
+  then
+    echo "$PROG: The path \`$1' is not a symbolic link and will not be deleted."
+  elif [ -h "$1" ]
+  then
+    $RM -f $1
+  fi
+  return 0
+}
+
+# Recreate a symbolic link (remove if existing)
+function recreate_link()
+{
+  rm_link "$2"
+  $LN -s "$1" "$2"
+  return 0
+}
+
+# Clean up symbolic links (ignore if don't exist)
+function clean_up_links()
+{
+  rm_link "$CABAL_USER_DIR"
+  rm_link "$GHC_USER_DIR"
+  return 0
+}
+
+# Validate and set the current GHC version
+function set_ghc_version()
+{
+  for v in $GHC_VERSIONS
+  do
+    if [ "$v" = "$1" ]
+    then
+      CURRENT_GHC_VERSION="$v"
+      return 0
+    fi
+  done
+  return -1
+}
+
+################################################################################
+#
+# Handle arguments
+#
+
+case "$#" in
+
+  "0" )
+    usage
+    exit 0
+  ;;
+
+  "1" )
+    case "$1" in
+      -c | --clean )
+        clean_up_links
+        exit 0
+      ;;
+
+      -i | --init )
+      ;;
+
+      [0-9]* )
+        if ! set_ghc_version "$1"
+        then
+          echo "$PROG: GHC version \`$1' unavailable."
+          usage
+          exit -1
+        fi
+      ;;
+
+      * )
+        echo "$PROG: Unknown argument: $1"
+        exit -1
+      ;;
+
+    esac
+
+    # Create the current version file
+    echo -n "$CURRENT_GHC_VERSION" > $CURRENT_GHC_VERSION_FILE
+
+    # Symbolic link to user's current GHC distribution directory
+    recreate_link "$GHC_DISTRIBUTION_DIR/$CURRENT_GHC_VERSION" "$GHC_USER_DIR"
+
+    # Directory to all cabal-install versions
+    CABAL_CONFIG_DIR="$GHC_CONFIG_DIR/cabal"
+    create_dir "$CABAL_CONFIG_DIR" || exit -1
+
+    # Directory to cabal-install for current GHC version
+    CURRENT_CABAL_CONFIG_DIR="$CABAL_CONFIG_DIR/$CURRENT_GHC_VERSION"
+    create_dir "$CURRENT_CABAL_CONFIG_DIR" || exit -1
+
+    # Symbolic link to cabal-install directory
+    recreate_link "$CURRENT_CABAL_CONFIG_DIR" "$CABAL_USER_DIR"
+
+    echo "$PROG: The GHC version in your path: $($GHC --numeric-version)."
+    exit 0
+  ;;
+
+  * )
+    echo "$PROG: Too many arguments."
+    usage
+    exit -1
+  ;;
+
+esac
+
