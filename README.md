@@ -74,8 +74,7 @@ Questions or Contributions
 --------------------------
 
 I welcome feedback (constructive criticism, suggestions, etc.). Send me a
-message on GitHub, send an email, or [contact
-me](http://www.google.com/profiles/sean.leather/contactme).
+message on GitHub, or [email me](mailto:leather@cs.uu.nl).
 
 Sean Leather
 
