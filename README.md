@@ -31,12 +31,13 @@ How to Use
         GHC_CONFIG_DIR="$HOME/.ghc-config"
         CABAL_USER_DIR="$HOME/.cabal"
 
-        # Add the paths for ghc-config, ghc, and cabal-installed binaries
+        # Add the paths for ghc-config, ghc, and cabal-installed binaries. Use
+        # the actual paths if you don't set the variables above.
         PATH=$PATH:$GHC_DISTRIBUTION_DIR/bin  # ghc-config
         PATH=$PATH:$GHC_CONFIG_DIR/ghc/bin    # ghc
         PATH=$PATH:$CABAL_USER_DIR/bin        # cabal and cabal-installed binaries
 
-        # Initialize the current configuration for this session
+        # Initialize the current configuration for this session.
         ghc-config -i
 
 4.  Install a GHC distribution into sudirectories of
