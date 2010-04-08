@@ -25,45 +25,37 @@ How to Use
 3.  Add the following to your startup scripts (i.e. your `.bashrc` or
     `.bash_profile`):
 
-    <pre>
-    # These environment variables are only necessary if you don't use the defaults
-    # shown.
-    GHC_DISTRIBUTION_DIR="/opt/ghc"
-    GHC_CONFIG_DIR="$HOME/.ghc-config"
-    CABAL_USER_DIR="$HOME/.cabal"
+        # These environment variables are only necessary if you don't use the defaults
+        # shown.
+        GHC_DISTRIBUTION_DIR="/opt/ghc"
+        GHC_CONFIG_DIR="$HOME/.ghc-config"
+        CABAL_USER_DIR="$HOME/.cabal"
 
-    # Add the paths for ghc-config, ghc, and cabal-installed binaries
-    PATH=$PATH:$GHC_DISTRIBUTION_DIR/bin  # ghc-config
-    PATH=$PATH:$GHC_CONFIG_DIR/ghc/bin    # ghc
-    PATH=$PATH:$CABAL_USER_DIR/bin        # cabal and cabal-installed binaries
+        # Add the paths for ghc-config, ghc, and cabal-installed binaries
+        PATH=$PATH:$GHC_DISTRIBUTION_DIR/bin  # ghc-config
+        PATH=$PATH:$GHC_CONFIG_DIR/ghc/bin    # ghc
+        PATH=$PATH:$CABAL_USER_DIR/bin        # cabal and cabal-installed binaries
 
-    # Initialize the current configuration for this session
-    ghc-config -i
-    </pre>
+        # Initialize the current configuration for this session
+        ghc-config -i
 
 4.  Install a GHC distribution into sudirectories of
     `$GHC_DISTRIBUTION_DIR/$GHC_VERSION/src`, where `$GHC_VERSION` is that
     particular GHC version number. For example:
 
-    <pre>
-    $ ls /opt/ghc/6.10.4/src
-    ghc-6.10.4/  ghc-6.10.4-i386-unknown-linux-n.tar.bz2
-    </pre>
+        $ ls /opt/ghc/6.10.4/src
+        ghc-6.10.4/  ghc-6.10.4-i386-unknown-linux-n.tar.bz2
 
 5.  Create a symbolic link to the included `Makefile` in `$GHC_DISTRIBUTION_DIR`.
 
-    <pre>
-    $ cd /opt/ghc/6.10.4
-    $ ln -s ../Makefile
-    </pre>
+        $ cd /opt/ghc/6.10.4
+        $ ln -s ../Makefile
 
 6.  Install the `$GHC_VERSION` of GHC using the `Makefile`. This will use the
     directory and naming conventions established by the previous steps. See the
     `Makefile for details.
 
-    <pre>
-    $ make install
-    </pre>
+        $ make install
 
 7.  Restart your shell.
 
