@@ -1,6 +1,8 @@
 Managing Multiple GHC Distributions
 ===================================
 
+**UNMAINTAINED**: I no longer use this. There are now better ways to do similar things.
+
 The **multi-ghc** repository contains tools for managing multiple distributions
 of GHC in a single system. It simplifies the installation process and switching
 the current environment to use one GHC+Cabal.
@@ -69,12 +71,3 @@ How to Use
      `bootstrap.sh` script.
 
 11.  Run `cabal --version` to confirm that cabal-install works.
-
-Questions or Contributions
---------------------------
-
-I welcome feedback (constructive criticism, suggestions, etc.). Send me a
-message on GitHub, or [email me](mailto:leather@cs.uu.nl).
-
-Sean Leather
-
